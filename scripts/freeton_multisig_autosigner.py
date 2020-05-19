@@ -11,6 +11,46 @@ TONOS_EXECUTABLE = './tonos-cli'
 TONOS_CONFIG = './tonlabs-cli.conf.json'
 TONOS_URL = 'https://main.ton.dev' # 'https://net.ton dev' for developers network
 
+
+def main():
+    parser = argparse.ArgumentParser(description='Script to automatiaclly sign multisig transactions',
+                                        prefix_chars='--', allow_abbrev=False)
+
+    # [WARN] Due to bug/feature in argparse for Python3 
+    # you must pass multisig address parameter, containig '-1' in the beginning, like "-1:XXXXXXXXXXXXXX" with '=' sign
+    parser.add_argument('--multisig-addr',
+                            type=str,
+                            help = 'address of multisig to sign transaction. Warning. Set it like --multisig-addr="-1:deadbeef111...." to Python correctly parse it',
+                            required = True)
+
+    args = parser.parse_args()
+
+    # check existance of executable, config, options in
+    # exits with non-zero code if something not present
+    check_tonos_cli_configuration()
+    
+    # find one transaction id in multisig contract to be confirmed
+    confirm_tx_id = get_awaiting_msig_tx(args.multisig_addr)
+
+    # exit normally, if no transactions found
+    if (not confirm_tx_id):
+        print(timestamp() + "[INFO] Call to {} succeeded, but no transactions to sign was found. "
+              "Exiting normally.".format(args.multisig_addr))
+        exit(0)
+
+    print(timestamp() + "[INFO] Found tx_id: {}, awating for confirmation on mulisig addr: {}"
+          .format(confirm_tx_id, args.multisig_addr))
+    
+    # send confirmation transaction to contract
+    result_of_confirm = confirm_awaiting_msig_tx(args.multisig_addr, confirm_tx_id)
+
+    print(timestamp() + "[DEBUG] Output of confirm command:\n")
+    print(result_of_confirm)
+
+    exit(0)
+
+
+
 def check_tonos_cli_configuration():
     
     # ./tonos-cli exists?  
@@ -21,7 +61,7 @@ def check_tonos_cli_configuration():
 
     # [WARN] This part can change often with changes in tonos-cli configuration
     # Modify or disable these checks, but pay special attention to part with PRIVATE KEYS
-    # hust check your tonos-cli can sign messages to your multisig. 
+    # just check your tonos-cli can sign messages to your multisig. 
     
     #  config for ./tonos-cli exists?
     if (not os.path.isfile(TONOS_CONFIG)):
@@ -143,41 +183,5 @@ def confirm_awaiting_msig_tx(msig_addr, tx_id):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Script to automatiaclly sign multisig transactions',
-                                        prefix_chars='--', allow_abbrev=False)
-
-    # [WARN] Due to bug/feature in argparse for Python3 
-    # you must pass multisig address parameter, containig '-1' in the beginning, like "-1:XXXXXXXXXXXXXX" with '=' sign
-    # EXAMPLE: 
-    # ```
-    # $ python3 ../scripts/freeton_multisig_autosigner.py --multisig-addr="-1:ab1f1e8daf784ba59d9ae6266bbadda7a0b63a1d5d38eed5c9a11161861eb1cd"
-    # ```    
-    # !!!! note the "=" sign in --multisig-addr
-
-    parser.add_argument('--multisig-addr',
-                            type=str,
-                            help = 'address of multisig to sign transaction. Warning. Set it like --multisig-addr="-1:deadbeef111...." to Python correctly parse it',
-                            required = True)
-
-    args = parser.parse_args()
-
-    # check existance of executable, config, options in
-    # exits with non-zero code if something not present
-    check_tonos_cli_configuration()
-    
-    confirm_tx_id = get_awaiting_msig_tx(args.multisig_addr)
-
-    if (not confirm_tx_id):
-        print(timestamp() + "[INFO] Call to {} succeeded, but no transactions to sign was found. "
-              "Exiting normally.".format(args.multisig_addr))
-        exit(0)
-
-    print(timestamp() + "[INFO] Found tx_id: {}, awating for confirmation on mulisig addr: {}"
-          .format(confirm_tx_id, args.multisig_addr))
-    
-    result_of_confirm = confirm_awaiting_msig_tx(args.multisig_addr, confirm_tx_id)
-    print(timestamp() + "[DEBUG] Output of confirm command:\n")
-    print(result_of_confirm)
-
-    exit(0)
+    main()
 
