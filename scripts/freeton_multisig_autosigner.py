@@ -150,7 +150,7 @@ def get_awaiting_msig_tx(msig_addr):
                                             .format(success_marker_regexp, result_output, shell_cmd_get_tx_id))
 
     # find string like "ids": ["0xfeb70af84cbd0c41", "0xaeb714aa8db520c1"]
-    find_tx_id_regexp = re.compile(r'^\s+"ids":\s+\["(0x[0-9a-f]{16})"', re.MULTILINE)
+    find_tx_id_regexp = re.compile(r'^\s+"ids":\s+\[\s*"(0x[0-9a-f]{16})"', re.MULTILINE)
     matches = find_tx_id_regexp.findall(result_output)
     
     return matches[0] if matches else None
